@@ -14,15 +14,22 @@ class Database:
         with self.get_connection() as conn:
             cursor = conn.cursor()
             
-            # Create users table
+            # Create users table (language ustuni qo'shildi)
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS users (
                     user_id INTEGER PRIMARY KEY,
                     username TEXT,
                     first_name TEXT,
+                    language TEXT DEFAULT 'uz',
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             ''')
+            
+            # Eski bazada language ustuni yo'q bo'lsa, xato bermasligi uchun uni qo'shib qo'yamiz
+            try:
+                cursor.execute("ALTER TABLE users ADD COLUMN language TEXT DEFAULT 'uz'")
+            except sqlite3.OperationalError:
+                pass 
             
             # Create sessions table
             cursor.execute('''
@@ -55,10 +62,23 @@ class Database:
     def update_user(self, user_id, username, first_name):
         with self.get_connection() as conn:
             cursor = conn.cursor()
+            # Foydalanuvchining tili o'chib ketmasligi uchun INSERT OR REPLACE o'rniga ON CONFLICT ishlatamiz
             cursor.execute('''
-                INSERT OR REPLACE INTO users (user_id, username, first_name)
+                INSERT INTO users (user_id, username, first_name)
                 VALUES (?, ?, ?)
+                ON CONFLICT(user_id) DO UPDATE SET
+                username=excluded.username,
+                first_name=excluded.first_name
             ''', (user_id, username, first_name))
+            conn.commit()
+
+    # Yangi qo'shilgan funksiya
+    def update_user_language(self, user_id, language):
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute('''
+                UPDATE users SET language = ? WHERE user_id = ?
+            ''', (language, user_id))
             conn.commit()
 
     def update_session(self, user_id, **kwargs):
