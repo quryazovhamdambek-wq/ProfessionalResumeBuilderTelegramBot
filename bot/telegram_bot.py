@@ -17,10 +17,9 @@ threading.Thread(target=run_health_check_server, daemon=True).start()
 import os
 import asyncio
 from telegram import Update, File, InlineKeyboardButton, InlineKeyboardMarkup
-
 from telegram.constants import ParseMode
 from telegram.ext import (
-    ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes, ConversationHandler
+    ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes, ConversationHandler, CallbackQueryHandler
 )
 from config import config
 from utils.logger import logger
@@ -48,6 +47,9 @@ class ResumeBot:
         # /start
         self.app.add_handler(CommandHandler("start", self.start))
         
+        # Tilni o'zgartirish tugmasini ushlab olish 
+        self.app.add_handler(CallbackQueryHandler(self.set_language, pattern="^lang_"))
+        
         # /upload_resume via PDF file handler
         self.app.add_handler(MessageHandler(filters.Document.PDF, self.handle_resume_upload))
         
@@ -72,22 +74,42 @@ class ResumeBot:
     async def start(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         user = update.effective_user
         db.update_user(user.id, user.username, user.first_name)
+        
         # Til tanlash tugmalarini yaratish 🔘
         keyboard = [
-        [
-            InlineKeyboardButton("🇺🇿 O'zbekcha", callback_data="lang_uz"),
-            InlineKeyboardButton("🇷🇺 Русский", callback_data="lang_ru"),
-            InlineKeyboardButton("🇬🇧 English", callback_data="lang_en")
-        ]
+            [
+                InlineKeyboardButton("🇺🇿 O'zbekcha", callback_data="lang_uz"),
+                InlineKeyboardButton("🇷🇺 Русский", callback_data="lang_ru"),
+                InlineKeyboardButton("🇬🇧 English", callback_data="lang_en")
+            ]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
 
-    #     Foydalanuvchiga til tanlash matni va tugmalarni yuborish 📩
+        # Foydalanuvchiga til tanlash matni va tugmalarni yuborish 📩
         await update.message.reply_text(
-        TEXTS['choose_lang']['uz'],
-        reply_markup=reply_markup
-    )
-    
+            TEXTS['choose_lang']['uz'],
+            reply_markup=reply_markup
+        )
+        
+    async def set_language(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        query = update.callback_query
+        await query.answer()
+
+        lang = query.data.split("_")[1] # 'uz', 'ru', yoki 'en'
+        user_id = query.from_user.id
+
+        # Ma'lumotlar bazasida foydalanuvchi tilini yangilash
+        db.update_user_language(user_id, lang)
+
+        # Xush kelibsiz xabarini tanlangan tilda yuborish
+        welcome_msg = (
+            f"✅ {TEXTS['welcome'][lang]}\n\n"
+            f"1️⃣ /start - {TEXTS['cmd_start'][lang]}\n"
+            f"2️⃣ <b>Upload PDF</b> - {TEXTS['cmd_pdf'][lang]}\n"
+            f"3️⃣ /upload_jd - {TEXTS['cmd_jd'][lang]}\n"
+            f"4️⃣ /generate - {TEXTS['cmd_generate'][lang]}"
+        )
+        await query.edit_message_text(welcome_msg, parse_mode=ParseMode.HTML)
 
     async def handle_resume_upload(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         document = update.message.document
@@ -218,3 +240,4 @@ class ResumeBot:
 if __name__ == "__main__":
     bot = ResumeBot()
     bot.run()
+        
