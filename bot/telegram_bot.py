@@ -16,7 +16,8 @@ threading.Thread(target=run_health_check_server, daemon=True).start()
 
 import os
 import asyncio
-from telegram import Update, File
+from telegram import Update, File, InlineKeyboardButton, InlineKeyboardMarkup
+
 from telegram.constants import ParseMode
 from telegram.ext import (
     ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes, ConversationHandler
@@ -29,6 +30,7 @@ from services.jd_analyzer import jd_analyzer
 from services.resume_writer import ResumeWriter
 from services.latex_generator import latex_generator
 from utils.rate_limiter import rate_limiter
+from bot.locales import TEXTS
 
 # Global instance
 resume_writer = ResumeWriter()
@@ -70,21 +72,22 @@ class ResumeBot:
     async def start(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         user = update.effective_user
         db.update_user(user.id, user.username, user.first_name)
-        
-        welcome_msg = (
-            "🚀 <b>Welcome to Professional Resume Builder Bot!</b>\n\n"
-            "Align your resume with <b>ATS-optimized</b> strategies in seconds.\n\n"
-            "Commands:\n"
-            "1️⃣ /start — Instructions\n"
-            "2️⃣ <b>Upload PDF</b> — Just send your resume PDF file\n"
-            "3️⃣ /upload_jd — Send the Job Description text\n"
-            "4️⃣ /generate — Build AI-optimized resume\n\n"
-            "Step 1: Send me your <b>resume</b> (PDF).\n"
-            "Step 2: Use /upload_jd to send the <b>Job Description</b>.\n"
-            "Step 3: Run /generate.\n\n"
-            "Let's get started!"
-        )
-        await update.message.reply_text(welcome_msg, parse_mode=ParseMode.HTML)
+        # Til tanlash tugmalarini yaratish 🔘
+        keyboard = [
+        [
+            InlineKeyboardButton("🇺🇿 O'zbekcha", callback_data="lang_uz"),
+            InlineKeyboardButton("🇷🇺 Русский", callback_data="lang_ru"),
+            InlineKeyboardButton("🇬🇧 English", callback_data="lang_en")
+        ]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+
+    #     Foydalanuvchiga til tanlash matni va tugmalarni yuborish 📩
+        await update.message.reply_text(
+        TEXTS['choose_lang']['uz'],
+        reply_markup=reply_markup
+    )
+    
 
     async def handle_resume_upload(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         document = update.message.document
