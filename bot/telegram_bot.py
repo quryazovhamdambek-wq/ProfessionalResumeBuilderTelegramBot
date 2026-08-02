@@ -1,3 +1,19 @@
+import threading
+from http.server import HTTPServer, BaseHTTPRequestHandler
+
+class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.end_headers()
+        self.wfile.write(b"Bot is alive!")
+
+def run_health_check_server():
+    server = HTTPServer(('0.0.0.0', 10000), SimpleHTTPRequestHandler)
+    server.serve_forever()
+
+# Serverni fonda (background thread) ishga tushirish
+threading.Thread(target=run_health_check_server, daemon=True).start()
+
 import os
 import asyncio
 from telegram import Update, File
