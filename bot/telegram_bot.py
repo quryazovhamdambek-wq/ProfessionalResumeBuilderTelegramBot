@@ -102,14 +102,8 @@ class ResumeBot:
         db.update_user_language(user_id, lang)
 
         # Xush kelibsiz xabarini tanlangan tilda yuborish
-        welcome_msg = (
-            f"✅ {TEXTS['welcome'][lang]}\n\n"
-            f"1️⃣ /start - {TEXTS['cmd_start'][lang]}\n"
-            f"2️⃣ <b>Upload PDF</b> - {TEXTS['cmd_pdf'][lang]}\n"
-            f"3️⃣ /upload_jd - {TEXTS['cmd_jd'][lang]}\n"
-            f"4️⃣ /generate - {TEXTS['cmd_generate'][lang]}"
-        )
-        await query.edit_message_text(welcome_msg, parse_mode=ParseMode.HTML)
+       await query.message.reply_text("Til muvaffaqiyatli tanlandi!")
+            
 
     async def handle_resume_upload(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         document = update.message.document
