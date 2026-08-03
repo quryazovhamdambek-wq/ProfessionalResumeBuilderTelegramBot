@@ -102,7 +102,7 @@ class ResumeBot:
         db.update_user_language(user_id, lang)
 
         # Xush kelibsiz xabarini tanlangan tilda yuborish
-       await query.message.reply_text("Til muvaffaqiyatli tanlandi!")
+        await query.message.reply_text("Til muvaffaqiyatli tanlandi!")
             
 
     async def handle_resume_upload(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
